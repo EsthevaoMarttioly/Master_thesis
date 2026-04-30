@@ -10,6 +10,11 @@
 calibration = dict(
     # Households
     eis   = 0.5,     # elasticity of intertemporal substitution
+    # Patiency
+    beta_high = 0.973,   # patient's discount factor
+    dbeta     = 0.058,   # difference between patient and impatient
+    lambda_I  = 0.25,    # share of impatient agents
+    q         = 0.1,     # prob of redrawing beta type (near-permanent)
     # Labor market
     f     = 0.4,     # job-finding probability
     s     = 0.1,     # separation probability  =>  U_ss = s/(s+f) = 0.2
@@ -28,7 +33,8 @@ calibration = dict(
     # Government
     tau   = 0.25,    # flat labor income tax rate
     b     = 0.1,     # unemployment benefit
-    B     = 1.0,     # govt bond supply
+    Tr    = 0.05,    # lump-sum Transfers
+    B     = 1.0,     # government debt = gdp
     # Monetary
     phi   = 1.5,     # Taylor rule coefficient on inflation
     rstar = 0.02,    # SS neutral real rate
