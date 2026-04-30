@@ -62,13 +62,13 @@ ss = hank.solve_steady_state(calibration, unknowns = unknowns_ss,
                              targets = targets_ss, solver = 'hybr')
 print("Elapsed = %s seconds" % (time.time() - start))    # 8.0 seconds on my laptop
 
-
+ss.keys() - calibration.keys()
 
 #---------------------------------------------------------------------------
 ## Display results
 print("Steady-state:")
-for k in ['Y', 'C', 'beta_high', 'w', 'r', 'pi',
-          'L', 'U', 'Tr', 'mu']:
+for k in ['Y', 'C', 'beta_high', 'A', 'B',
+          'U', 'L', 'asset_mkt', 'Tr']:
     print(f"  {k:15s} = {ss[k]:.4f}")
 
 

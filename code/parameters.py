@@ -32,7 +32,7 @@ calibration = dict(
     r     = 0.005,   # real interest rate at SS
     # Government
     tau   = 0.25,    # labor tax = 40% GDP
-    Tr    = 0.0,     # lump-sum Transfers = 20% GDP
+    Tr    = 0.1,     # lump-sum Transfers = 20% GDP
     B     = 1.2,     # debt = 120% GPD
     # Monetary
     phi   = 1.5,     # Taylor rule coefficient on inflation
