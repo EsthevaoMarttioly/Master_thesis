@@ -60,7 +60,7 @@ targets_ss  = {'asset_mkt': 0,
 start = time.time()
 ss = hank.solve_steady_state(calibration, unknowns = unknowns_ss,
                              targets = targets_ss, solver = 'hybr')
-print("Elapsed = %s seconds" % (time.time() - start))    # 3.7 seconds on my laptop
+print("Elapsed = %s seconds" % (time.time() - start))    # 8.0 seconds on my laptop
 
 
 

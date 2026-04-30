@@ -34,12 +34,13 @@ def make_grid(rho_e, sd_e, nE, amin, amax, nA,
     # q : prob of redrawing beta type each period (0.01 => near-permanent)
     Pi_b = (1 - q) * np.eye(2) + q * np.outer(np.ones(2), pi_b)
 
-    # Kronecker: (beta) x (s x e)
-    Pi_se = np.kron(Pi_s, Pi_e)      # (nS*nE, nS*nE)
-    Pi = np.kron(Pi_b, Pi_se)        # (nBeta*nS*nE, nBeta*nS*nE)
+    # Kronecker: outer = s, middle = beta, inner = e  =>  (s, beta, e)
+    Pi_be = np.kron(Pi_b, Pi_e)      # (beta, e)
+    Pi = np.kron(Pi_s, Pi_be)        # (s, beta, e)
  
-    # beta vector: each state carries its type's discount factor
-    beta = np.kron(b_grid, np.ones(2*nE))     # (nBeta*nS*nE,)
+    # For each s-block: [b0]*nE, [b1]*nE  repeated for both s values
+    beta = np.tile(np.repeat(b_grid, nE), 2)   # (s, beta, e)
+
     return e_grid, Pi, a_grid, beta
 
 
@@ -51,22 +52,17 @@ def labor_income(e_grid, w, b, tau, Tr):
     y_emp   = (1 - tau) * w * e_grid + Tr * nE   # [employed]
     y_unemp = b * nE                             # [unemployed]
 
-    y = np.tile(np.r_[y_emp, y_unemp], 2)        # shape (nBeta * 2 * nE)
+    y = np.r_[np.tile(y_emp, 2), np.tile(y_unemp, 2)]    # concat (s, beta, e) income
     return y
-
 
 
 ## 3. The employment status: 1 if unemployed (s=U), 0 if employed (s=E).
 ## Unemp Mass (U) = 1 - integral of 1[s = E] * dLambda(s,e,a) = 1 - L
 def unemployment(c):
-    nS   = 2
-    N    = c.shape[0]                          # nBeta * nS * nE
-    rows = np.arange(N)
-    mask = ((rows // nE) % nS) == 1           # True for unemployed states
-    u    = np.where(mask[:, np.newaxis], 1.0, 0.0) * np.ones_like(c)
+    N = c.shape[0]           # nS * nBeta * nE
+    u = np.zeros_like(c)     # (N, nA)
+    u[N // 2:, :] = 1.0      # unemployed = second half (s=1)
     return u
-
-
 
 
 ## 1. EGM Problem
@@ -98,7 +94,6 @@ def household(Va_p, a_grid, y, r, beta, eis):
     Va = (1 + r) * c ** (-1/eis)          # Va^t = (1+r) * u'(c_t)
 
     return Va, a, c
-
 
 # Parameters
 eis   = 0.5     # elasticity of intertemporal substitution
@@ -145,18 +140,21 @@ e_grid, Pi, a_grid, beta = make_grid(rho_e, sd_e, nE, amin, amax, nA,
 
 y = labor_income(e_grid, w, b, tau, Tr)
 
+y
+Pi.shape
 
-# c = np.maximum(1e-8, y[..., np.newaxis] + np.maximum(r, 0.04) * a_grid)
-# Va = (1 + r) * (c ** (-1 / eis))
 
-# c_nextgrid = (beta[:, np.newaxis] * Va) ** (-eis)  # u'(ct+1) = beta * E(Va^(t+1)) = c_{t+1}^(-1/eis)
-# coh = (1 + r) * a_grid + y[..., np.newaxis]
+c = np.maximum(1e-8, y[..., np.newaxis] + np.maximum(r, 0.04) * a_grid)
+Va = (1 + r) * (c ** (-1 / eis))
 
-# # We solve a as function of CoH, but interpolating on the grid
-# a = interpolate.interpolate_y(c_nextgrid + a_grid, coh, a_grid)
-# a = np.maximum(a, a_grid[0])          # a >= amin
-# c = coh - a                           # c + a' = (1+r)*a + y = CoH
-# Va = (1 + r) * c ** (-1/eis)          # Va^t = (1+r) * u'(c_t)
+c_nextgrid = (beta[:, np.newaxis] * Va) ** (-eis)  # u'(ct+1) = beta * E(Va^(t+1)) = c_{t+1}^(-1/eis)
+coh = (1 + r) * a_grid + y[..., np.newaxis]
+
+# We solve a as function of CoH, but interpolating on the grid
+a = interpolate.interpolate_y(c_nextgrid + a_grid, coh, a_grid)
+a = np.maximum(a, a_grid[0])          # a >= amin
+c = coh - a                           # c + a' = (1+r)*a + y = CoH
+Va = (1 + r) * c ** (-1/eis)          # Va^t = (1+r) * u'(c_t)
 
 
 
@@ -172,10 +170,12 @@ print(f'Macro outputs: {hh.outputs}')
 
 from code.parameters import calibration, unknowns_ss
 
-calibration["w"] = 0.9
+calibration["beta_high"] = 0.975
+calibration["b"] = 0.2
 calibration["Tr"] = 0.05
+calibration["w"] = 1.2
 
 ss = hh.steady_state(calibration)
 
 ss
-ss["U"]
+ss.internals["household"]["beta"]

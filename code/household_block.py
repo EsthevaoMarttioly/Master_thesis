@@ -70,12 +70,13 @@ def make_grid(rho_e, sd_e, nE, amin, amax, nA,
     # q : prob of redrawing beta type each period (0.01 => near-permanent)
     Pi_b = (1 - q) * np.eye(2) + q * np.outer(np.ones(2), pi_b)
 
-    # Kronecker: (beta) x (s x e)
-    Pi_se = np.kron(Pi_s, Pi_e)      # (nS*nE, nS*nE)
-    Pi = np.kron(Pi_b, Pi_se)        # (nBeta*nS*nE, nBeta*nS*nE)
+    # Kronecker: outer = s, middle = beta, inner = e  =>  (s, beta, e)
+    Pi_be = np.kron(Pi_b, Pi_e)      # (beta, e)
+    Pi = np.kron(Pi_s, Pi_be)        # (s, beta, e)
  
-    # beta vector: each state carries its type's discount factor
-    beta = np.kron(b_grid, np.ones(2*nE))     # (nBeta*nS*nE,)
+    # For each s-block: [b0]*nE, [b1]*nE  repeated for both s values
+    beta = np.tile(np.repeat(b_grid, nE), 2)   # (s, beta, e)
+
     return e_grid, Pi, a_grid, beta
 
 
@@ -87,18 +88,17 @@ def labor_income(e_grid, w, b, tau, Tr):
     y_emp   = (1 - tau) * w * e_grid + Tr * nE   # [employed]
     y_unemp = b * nE                             # [unemployed]
 
-    y = np.tile(np.r_[y_emp, y_unemp], 2)        # shape (nBeta * 2 * nE)
+    y = np.r_[np.tile(y_emp, 2), np.tile(y_unemp, 2)]    # concat (s, beta, e) income
     return y
 
 
 
 ## 3. The employment status: 1 if unemployed (s=U), 0 if employed (s=E).
 ## Unemp Mass (U) = 1 - integral of 1[s = E] * dLambda(s,e,a) = 1 - L
-def unemployment(c, nE):
-    N    = c.shape[0]                 # nBeta * nS * nE
-    rows = np.arange(N)
-    mask = ((rows // nE) % 2) == 1    # True for unemployed states
-    u    = np.where(mask[:, np.newaxis], 1.0, 0.0) * np.ones_like(c)
+def unemployment(c):
+    N = c.shape[0]           # nS * nBeta * nE
+    u = np.zeros_like(c)     # (N, nA)
+    u[N // 2:, :] = 1.0      # unemployed = second half (s=1)
     return u
 
 
