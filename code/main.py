@@ -90,13 +90,13 @@ print(f"Goods market clearing: {ss['goods_mkt']:.2e}")    # ok
 #---------------------------------------------------------------------------
 # Consumption Policy Function
 a_grid = ss.internals['household']['a_grid']
-c_pol  = ss.internals['household']['c'].reshape(2, calibration['nE'], calibration['nA'])
+c_pol  = ss.internals['household']['c'].reshape(2, 2, calibration['nE'], calibration['nA'])
 
 
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.plot(a_grid, c_pol[0, 3, :], color='steelblue',
+ax.plot(a_grid, c_pol[0, 1, 3, :], color='steelblue',
         label='Employed (median $e$)')
-ax.plot(a_grid, c_pol[1, 3, :], color='tomato', linestyle='--',
+ax.plot(a_grid, c_pol[1, 1, 3, :], color='tomato', linestyle='--',
         label='Unemployed (median $e$)')
 ax.set_xlabel('Assets $a$')
 ax.set_ylabel('Consumption $c(s,e,a)$')
